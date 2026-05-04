@@ -179,7 +179,7 @@ class StepTest(unittest.TestCase):
     self.assertEqual(step.thinking, "")
     self.assertEqual(step.tool_calls, [])
     self.assertEqual(step.error, "")
-    self.assertIsNone(step.is_final_response)
+    self.assertIsNone(step.is_complete_response)
     self.assertIsNone(step.structured_output)
 
   def test_mutable(self):

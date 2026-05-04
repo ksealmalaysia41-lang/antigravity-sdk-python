@@ -57,7 +57,7 @@ async def single_query() -> None:
     print(f"  >>> {prompt}")
     await conv.send(prompt)
     async for step in conv.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"  <<< {step.content}")
         break
     print("  PASS: single-query conversation completed.")
@@ -79,7 +79,7 @@ async def multi_turn() -> None:
     print(f"  >>> {prompt1}")
     await conv.send(prompt1)
     async for step in conv.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"  [T1] {step.content}")
         break
 
@@ -89,7 +89,7 @@ async def multi_turn() -> None:
     await conv.send(prompt2)
     response = ""
     async for step in conv.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         response = step.content
         print(f"  [T2] {response}")
         break
@@ -123,7 +123,7 @@ async def sequential_conversations() -> None:
   async with conversation.Conversation.create(strategy) as conv1:
     await conv1.send("Say 'hello from conv1'.")
     async for step in conv1.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"  [Conv1] {step.content}")
         break
   print("  Disconnected conversation 1.\n")
@@ -133,7 +133,7 @@ async def sequential_conversations() -> None:
   async with conversation.Conversation.create(strategy) as conv2:
     await conv2.send("Say 'hello from conv2'.")
     async for step in conv2.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"  [Conv2] {step.content}")
         break
 
@@ -142,7 +142,7 @@ async def sequential_conversations() -> None:
     async with conversation.Conversation.create(strategy) as conv3:
       await conv3.send("Say 'hello from conv3'.")
       async for step in conv3.receive_steps():
-        if step.is_final_response:
+        if step.is_complete_response:
           print(f"  [Conv3] {step.content}")
           break
 
@@ -168,7 +168,7 @@ async def disconnect_cleanup() -> None:
     print("  >>> Say 'hi'.")
     await conv.send("Say 'hi'.")
     async for step in conv.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"  {step.content}")
         break
 

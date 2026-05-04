@@ -141,7 +141,7 @@ async def main():
 
     print("\nStreaming agent output:")
     async for step in agent._conversation.receive_steps():
-      if step.is_final_response:
+      if step.is_complete_response:
         print(f"\nAgent: {step.content}")
 
 

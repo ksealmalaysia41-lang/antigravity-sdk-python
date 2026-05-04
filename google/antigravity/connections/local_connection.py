@@ -161,13 +161,11 @@ class LocalConnectionStep(types.Step):
     is_target_user = step_dict.get("target") == "TARGET_USER"
     # The idle signal (trajectory_state_update / STATE_IDLE) arrives as a
     # separate event type with no text content, so we cannot retroactively
-    # mark a step as "final" at idle time. Instead, we flag each step that
-    # is a completed model response directed at the user. Multiple steps
-    # per turn may carry this flag; consumers that want the *last*
-    # response should iterate fully (Conversation.chat() does this).
-    # TODO(karmel): Rename is_final_response to better reflect that
-    # multiple steps per turn may match this heuristic.
-    is_final_response = (
+    # mark a step at idle time. Instead, we flag each step that is a
+    # completed model response directed at the user. Multiple steps per
+    # turn may carry this flag; consumers that want the *last* response
+    # should iterate fully (Conversation.chat() does this).
+    is_complete_response = (
         is_from_model and is_done and has_text and is_target_user
     )
 
@@ -195,7 +193,7 @@ class LocalConnectionStep(types.Step):
         thinking=step_dict.get("thinking", ""),
         tool_calls=tool_calls,
         error=step_dict.get("error_message", ""),
-        is_final_response=is_final_response,
+        is_complete_response=is_complete_response,
         target=step_dict.get("target", ""),
         structured_output=structured_output,
 
@@ -266,7 +264,7 @@ class LocalConnection(connection.Connection):
     # fire before receive_steps() returns.
     self._active_subagent_ids: set[str] = set()
     # Maps subagent trajectory_id -> final response content. Populated
-    # when the reader loop sees an is_final_response step from a subagent
+    # when the reader loop sees an is_complete_response step from a subagent
     # trajectory, and consumed when that trajectory goes idle.
     self._subagent_responses: dict[str, str] = {}
     self._parent_idle = True
@@ -478,7 +476,7 @@ class LocalConnection(connection.Connection):
 
           # Track the last model response from subagent trajectories so we
           # can include it in the post-tool-call ToolResult. We capture any
-          # MODEL step with text (not just is_final_response) because the
+          # MODEL step with text (not just is_complete_response) because the
           # harness may deliver text on the ACTIVE transition and then send
           # the DONE transition with the same or empty text.
           is_subagent_step = (

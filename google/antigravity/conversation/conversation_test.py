@@ -43,7 +43,7 @@ def _make_step(
       source=source,
       status=status,
       content=content,
-      is_final_response=is_final,
+      is_complete_response=is_final,
   )
 
 

@@ -130,7 +130,7 @@ class Conversation:
     structured_output = None
     async for step in self.receive_steps():
       steps.append(step)
-      if step.is_final_response:
+      if step.is_complete_response:
         final_response = step.content
       if step.type == types.StepType.FINISH:
         structured_output = step.structured_output
@@ -155,7 +155,7 @@ class Conversation:
   def last_response(self) -> str:
     """Returns the content of the most recent final model response."""
     for step in reversed(self._steps):
-      if step.is_final_response:
+      if step.is_complete_response:
         return step.content
     return ""
 

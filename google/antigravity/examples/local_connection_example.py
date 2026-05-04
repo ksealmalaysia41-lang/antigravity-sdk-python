@@ -139,7 +139,7 @@ async def run():
 
           try:
             async for step in conversation.receive_steps():
-              if step.is_final_response:
+              if step.is_complete_response:
                 print(f"\n{step.content}\n")
           except asyncio.CancelledError:
             print("\nCanceling current request...")

@@ -224,7 +224,7 @@ async def run_prompt(conversation: Conversation, prompt: str) -> None:
   print(f"{'='*60}")
   await conversation.send(prompt)
   async for step in conversation.receive_steps():
-    if step.is_final_response:
+    if step.is_complete_response:
       cascade_id = getattr(step, "cascade_id", "")
       trajectory_id = getattr(step, "trajectory_id", "")
       is_parent = not cascade_id or trajectory_id == cascade_id

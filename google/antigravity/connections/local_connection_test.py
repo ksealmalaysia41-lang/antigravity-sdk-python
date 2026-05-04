@@ -562,12 +562,12 @@ class LocalConnectionTest(unittest.IsolatedAsyncioTestCase):
 class LocalConnectionStepFromDictTest(unittest.TestCase):
   """Tests for LocalConnectionStep.from_dict derivation logic.
 
-  Specifically targets the is_final_response calculation (lines 134-137) and
-  edge cases in step type detection.
+  Specifically targets the is_complete_response calculation and edge cases in
+  step type detection.
   """
 
-  def test_is_final_response_true(self):
-    """Verifies is_final_response is True when source=MODEL, state=DONE, target=TARGET_USER, and text is present.
+  def test_is_complete_response_true(self):
+    """Verifies is_complete_response is True when source=MODEL, state=DONE, target=TARGET_USER, and text is present.
 
     Why: This is the canonical "agent finished speaking" signal that callers
     rely on to surface the final answer. All four conditions must hold:
@@ -579,63 +579,63 @@ class LocalConnectionStepFromDictTest(unittest.TestCase):
         "text": "Here is my answer.",
         "target": "TARGET_USER",
     })
-    self.assertTrue(step.is_final_response)
+    self.assertTrue(step.is_complete_response)
 
-  def test_is_final_response_false_when_source_not_model(self):
-    """Verifies is_final_response is False when source is not MODEL.
+  def test_is_complete_response_false_when_source_not_model(self):
+    """Verifies is_complete_response is False when source is not MODEL.
 
     Why: System or user steps that are done and have text should not be
-    treated as the model's final answer.
+    treated as a completed model response.
     """
     step = local_connection.LocalConnectionStep.from_dict({
         "source": "SOURCE_USER",
         "state": "STATE_DONE",
         "text": "Some user text.",
     })
-    self.assertFalse(step.is_final_response)
+    self.assertFalse(step.is_complete_response)
 
-  def test_is_final_response_false_when_not_done(self):
-    """Verifies is_final_response is False when state is not DONE.
+  def test_is_complete_response_false_when_not_done(self):
+    """Verifies is_complete_response is False when state is not DONE.
 
     Why: An active model step is still streaming; it should not be treated
-    as final until the harness marks it done.
+    as complete until the harness marks it done.
     """
     step = local_connection.LocalConnectionStep.from_dict({
         "source": "SOURCE_MODEL",
         "state": "STATE_ACTIVE",
         "text": "Partial response...",
     })
-    self.assertFalse(step.is_final_response)
+    self.assertFalse(step.is_complete_response)
 
-  def test_is_final_response_false_when_no_text(self):
-    """Verifies is_final_response is False when text is empty.
+  def test_is_complete_response_false_when_no_text(self):
+    """Verifies is_complete_response is False when text is empty.
 
     Why: A done model step with no text is a structural step (e.g. tool use
-    completion), not a final textual response.
+    completion), not a completed textual response.
     """
     step = local_connection.LocalConnectionStep.from_dict({
         "source": "SOURCE_MODEL",
         "state": "STATE_DONE",
     })
-    self.assertFalse(step.is_final_response)
+    self.assertFalse(step.is_complete_response)
 
-  def test_is_final_response_false_when_error_state(self):
-    """Verifies is_final_response is False when state is ERROR."""
+  def test_is_complete_response_false_when_error_state(self):
+    """Verifies is_complete_response is False when state is ERROR."""
     step = local_connection.LocalConnectionStep.from_dict({
         "source": "SOURCE_MODEL",
         "state": "STATE_ERROR",
         "text": "Something went wrong",
         "error_message": "internal error",
     })
-    self.assertFalse(step.is_final_response)
+    self.assertFalse(step.is_complete_response)
 
-  def test_is_final_response_false_when_target_environment(self):
-    """Verifies is_final_response is False for TARGET_ENVIRONMENT steps.
+  def test_is_complete_response_false_when_target_environment(self):
+    """Verifies is_complete_response is False for TARGET_ENVIRONMENT steps.
 
     Why: Tool execution steps (view_file, run_command, etc.) are targeted at
     the environment, not the user. Even when they are source=MODEL, state=DONE,
     and have text (e.g. "Requesting permission to make tool call"), they must
-    not be treated as the agent's final answer.
+    not be treated as a completed model response.
     """
     step = local_connection.LocalConnectionStep.from_dict({
         "source": "SOURCE_MODEL",
@@ -643,7 +643,7 @@ class LocalConnectionStepFromDictTest(unittest.TestCase):
         "text": "Requesting permission to make tool call",
         "target": "TARGET_ENVIRONMENT",
     })
-    self.assertFalse(step.is_final_response)
+    self.assertFalse(step.is_complete_response)
 
   def test_step_type_tool_call_with_builtin(self):
     """Verifies that a step with a builtin tool proto field is typed TOOL_CALL."""
@@ -1420,7 +1420,7 @@ class LocalConnectionPostTurnHookTest(unittest.IsolatedAsyncioTestCase):
 
     How: Send two step updates — one TARGET_ENVIRONMENT (a tool permission
     request) and one TARGET_USER (the final answer). Assert both are yielded,
-    and only the TARGET_USER step has is_final_response=True.
+    and only the TARGET_USER step has is_complete_response=True.
     """
     conn = local_connection.LocalConnection(
         process=self.mock_process,
@@ -1480,12 +1480,12 @@ class LocalConnectionPostTurnHookTest(unittest.IsolatedAsyncioTestCase):
         steps[0].content, "Requesting permission to make tool call"
     )
     self.assertEqual(steps[0].target, "TARGET_ENVIRONMENT")
-    self.assertFalse(steps[0].is_final_response)
+    self.assertFalse(steps[0].is_complete_response)
 
     # Step 2: user step — the real final response.
     self.assertEqual(steps[1].content, "Here is my answer.")
     self.assertEqual(steps[1].target, "TARGET_USER")
-    self.assertTrue(steps[1].is_final_response)
+    self.assertTrue(steps[1].is_complete_response)
 
   async def test_post_turn_hook_not_fired_for_environment_step(self):
     """Verifies PostTurnHook does NOT fire for TARGET_ENVIRONMENT steps.

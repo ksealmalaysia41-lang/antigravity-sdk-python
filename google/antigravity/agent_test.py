@@ -65,7 +65,7 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
     mock_conversation.chat = mock.AsyncMock(
         return_value=types.ChatResponse(
             text="Hello back",
-            steps=[types.Step(is_final_response=True, content="Hello back")],
+            steps=[types.Step(is_complete_response=True, content="Hello back")],
         )
     )
 
@@ -627,7 +627,7 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
     mock_conversation.send = mock.AsyncMock()
 
     async def mock_receive_steps():
-      yield types.Step(is_final_response=True, content="Agent response")
+      yield types.Step(is_complete_response=True, content="Agent response")
 
     mock_conversation.receive_steps = mock_receive_steps
 

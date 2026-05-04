@@ -318,7 +318,7 @@ class Agent:
         await self._conversation.send(user_input)
 
         async for step in self._conversation.receive_steps():
-          if step.is_final_response:
+          if step.is_complete_response:
             print(f"Agent: {step.content}")
 
       except (KeyboardInterrupt, EOFError):
