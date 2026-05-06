@@ -25,7 +25,18 @@ Probes the boundaries of LocalConnection lifecycle:
   3. Disconnect:  Does disconnect() cleanly kill the subprocess?
 
 To run:
-  python multi_conversation_example.py
+  bazel run //examples:multi_conversation
+
+Criteria for correct script performance:
+  1. The script exits cleanly with return code 0 (no unhandled exceptions).
+  2. "SCENARIO 0: Single query" appears and is followed by "PASS".
+  3. "SCENARIO 1: Multi-turn" appears and the agent recalls "banana",
+     followed by "PASS: context retained across turns."
+  4. "SCENARIO 2: Multiple independent conversations" appears and all
+     three conversations produce responses, followed by "PASS".
+  5. "SCENARIO 3: Disconnect cleanup" appears and the process exits
+     cleanly, followed by "PASS".
+  6. The SUMMARY section shows all scenarios as [PASS].
 """
 
 import asyncio
@@ -172,28 +183,29 @@ async def disconnect_cleanup() -> None:
         print(f"  {step.content}")
         break
 
-    # Peek at the subprocess before we kill it.
+    # Peek at the subprocess while the connection is still alive.
     lc = conv._connection  # pylint: disable=protected-access
     assert isinstance(lc, local_connection.LocalConnection)
     process = lc._process  # pylint: disable=protected-access
     pid = process.pid
     print(f"  Harness PID before disconnect: {pid}")
 
-    returncode = process.poll()
-    if returncode is not None:
-      print(f"  PASS: process {pid} exited (code {returncode}).")
-    else:
-      print(f"  FAIL: process {pid} still running after disconnect().")
-      process.kill()
-      raise RuntimeError(f"process {pid} still running after disconnect().")
+  # --- Now outside the async-with: disconnect() has been called. ---
+  returncode = process.poll()
+  if returncode is not None:
+    print(f"  PASS: process {pid} exited (code {returncode}).")
+  else:
+    print(f"  FAIL: process {pid} still running after disconnect().")
+    process.kill()
+    raise RuntimeError(f"process {pid} still running after disconnect().")
 
-    # Sending on a dead connection should fail.
-    try:
-      await conv.send("This should fail.")
-      print("  FAIL: send() succeeded after disconnect.")
-      raise RuntimeError("send() succeeded after disconnect.")
-    except Exception as e:  # pylint: disable=broad-except
-      print(f"  PASS: send() raised {type(e).__name__}.")
+  # Sending on a disconnected conversation should fail.
+  try:
+    await conv.send("This should fail.")
+    print("  FAIL: send() succeeded after disconnect.")
+    raise RuntimeError("send() succeeded after disconnect.")
+  except Exception as e:  # pylint: disable=broad-except
+    print(f"  PASS: send() raised {type(e).__name__}.")
 
 
 # ---------------------------------------------------------------------------

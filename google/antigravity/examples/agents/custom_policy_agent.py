@@ -12,7 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Agent example with custom policy."""
+"""Agent example with custom policy.
+
+Demonstrates using a declarative policy to block dangerous shell commands
+while allowing safe ones.
+
+Criteria for correct script performance:
+  1. The script exits cleanly with return code 0 (no unhandled exceptions).
+  2. "Creating agent..." appears in the output.
+  3. The first chat ("List the files") produces a response that includes
+     file or directory names, confirming the safe command was allowed.
+  4. The second chat ("Delete all files using rm -rf") is either denied by
+     the policy (the agent reports it was blocked or cannot comply) or the
+     agent refuses to execute the dangerous command. Either way, no
+     destructive action is taken.
+"""
 
 import asyncio
 import logging

@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple agent example using the high-level Agent API."""
+"""Simple agent example using the high-level Agent API.
+
+Criteria for correct script performance:
+  1. The script exits cleanly with return code 0 (no unhandled exceptions).
+  2. "Creating agent..." appears in the output.
+  3. "Chatting with agent..." appears in the output.
+  4. The agent produces a response containing "4" (the answer to 2+2).
+"""
 
 import asyncio
 import logging
