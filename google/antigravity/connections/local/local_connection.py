@@ -1171,7 +1171,6 @@ def _get_default_binary_path() -> str:
   if env_path := os.environ.get("ANTIGRAVITY_HARNESS_PATH"):
     return env_path
 
-
   # 3. Try importlib.resources (External Wheel)
   try:
     # Using 'google.antigravity' as the package name.

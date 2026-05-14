@@ -2892,8 +2892,6 @@ class LocalConnectionSendTest(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(parts[1]["media"]["data"], "ZmFrZV9wZGY=")  # b"fake_pdf"
 
 
-
-
 class LocalAgentConfigTest(unittest.TestCase):
 
   def test_create_strategy(self):
