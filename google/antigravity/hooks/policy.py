@@ -73,6 +73,7 @@ import inspect
 import logging
 import os
 from typing import Any
+import urllib.parse
 
 import pydantic
 
@@ -272,6 +273,32 @@ def confirm_run_command(
   ]
 
 
+def _normalize_path(path: str) -> str:
+  """Canonicalizes a path for workspace boundary comparison.
+
+  Handles inputs from multiple sources that may use different representations:
+
+  - **file:// URIs**: The Go harness sends paths as ``file:///abs/path``.
+    These are parsed via ``urllib.parse.urlparse`` to extract the path
+    component, so ``file:///dev/shm/foo`` becomes ``/dev/shm/foo``.
+  - **Percent-encoded characters**: URI paths may encode special characters
+    (spaces as ``%20``, etc.). These are decoded via ``urllib.parse.unquote``.
+  - **Redundant separators, `.`, `..`**: Resolved by ``os.path.abspath``.
+
+  Args:
+    path: A filesystem path or ``file://`` URI.
+
+  Returns:
+    An absolute, canonical filesystem path.
+  """
+  parsed = urllib.parse.urlparse(path)
+  if parsed.scheme == "file":
+    # urlparse("file:///abs/path").path == "/abs/path"
+    # urlparse("file://host/share").path == "/share" (host ignored)
+    path = urllib.parse.unquote(parsed.path)
+  return os.path.abspath(path)
+
+
 def workspace_only(workspaces: Sequence[str]) -> list[Policy]:
   """Restricts file tools to the given workspace directories.
 
@@ -285,7 +312,7 @@ def workspace_only(workspaces: Sequence[str]) -> list[Policy]:
   Returns:
     A list of Policies.
   """
-  abs_workspaces = [os.path.abspath(ws) for ws in workspaces]
+  abs_workspaces = [_normalize_path(ws) for ws in workspaces]
 
   file_tools = [t.value for t in types.BuiltinTools.file_tools()]
 
@@ -303,7 +330,7 @@ def workspace_only(workspaces: Sequence[str]) -> list[Policy]:
       # tool calls that happen to omit paths (e.g. list_directory
       # with no args uses cwd).
       return False
-    abs_path = os.path.abspath(path)
+    abs_path = _normalize_path(path)
     return not any(
         abs_path == ws or abs_path.startswith(ws + os.sep)
         for ws in abs_workspaces

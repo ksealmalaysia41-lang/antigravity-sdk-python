@@ -764,6 +764,58 @@ class WorkspaceOnlyTest(unittest.IsolatedAsyncioTestCase):
     )
     self.assertTrue(result.allow)
 
+  async def test_file_uri_in_args_matches_workspace(self):
+    """file:// URIs in tool call args are normalized before comparison.
+
+    The Go harness sends paths as file:///abs/path URIs. These must be
+    stripped to plain filesystem paths before workspace boundary checks.
+    """
+    policies = policy.workspace_only(["/dev/shm/workspace"])
+    hook = policy.enforce(policies)
+    ctx = hooks.HookContext()
+    result = await hook.run(
+        ctx,
+        _make_tool_call(
+            "view_file", file_path="file:///dev/shm/workspace/foo.py"
+        ),
+    )
+    self.assertTrue(result.allow)
+
+  async def test_file_uri_outside_workspace_denied(self):
+    """file:// URI outside workspace is still denied after normalization."""
+    policies = policy.workspace_only(["/dev/shm/workspace"])
+    hook = policy.enforce(policies)
+    ctx = hooks.HookContext()
+    result = await hook.run(
+        ctx,
+        _make_tool_call("view_file", file_path="file:///etc/secrets/key"),
+    )
+    self.assertFalse(result.allow)
+
+  async def test_percent_encoded_uri_in_args(self):
+    """Percent-encoded characters in file:// URIs are decoded."""
+    policies = policy.workspace_only(["/tmp/my workspace"])
+    hook = policy.enforce(policies)
+    ctx = hooks.HookContext()
+    result = await hook.run(
+        ctx,
+        _make_tool_call(
+            "view_file", path="file:///tmp/my%20workspace/file.py"
+        ),
+    )
+    self.assertTrue(result.allow)
+
+  async def test_file_uri_in_workspace_config(self):
+    """file:// URIs passed as workspace paths are also normalized."""
+    policies = policy.workspace_only(["file:///dev/shm/workspace"])
+    hook = policy.enforce(policies)
+    ctx = hooks.HookContext()
+    result = await hook.run(
+        ctx,
+        _make_tool_call("view_file", path="/dev/shm/workspace/foo.py"),
+    )
+    self.assertTrue(result.allow)
+
 
 if __name__ == "__main__":
   unittest.main()
