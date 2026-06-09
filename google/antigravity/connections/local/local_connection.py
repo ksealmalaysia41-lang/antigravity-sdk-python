@@ -1454,6 +1454,7 @@ def _to_mcp_server_proto(
       "name": server_cfg.name,
       "enabled_tools": server_cfg.enabled_tools or [],
       "disabled_tools": server_cfg.disabled_tools or [],
+      "timeout_seconds": server_cfg.timeout_seconds or 0,
   }
   if isinstance(server_cfg, types.McpStdioServer):
     kwargs["stdio"] = localharness_pb2.McpStdioTransport(
